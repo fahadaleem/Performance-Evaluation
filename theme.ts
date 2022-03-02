@@ -1,5 +1,7 @@
 import { extendTheme } from "@chakra-ui/react";
 import "@fontsource/poppins";
+import { StepsStyleConfig as Steps } from "chakra-ui-steps";
+
 const theme = {
   colors: {
     brand: {
@@ -15,4 +17,9 @@ const theme = {
   },
 };
 
-export const extendedTheme = extendTheme(theme);
+export const extendedTheme = extendTheme({
+  ...theme,
+  components: {
+    Steps,
+  },
+});
