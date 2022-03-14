@@ -9,56 +9,63 @@ import {
   InputLeftElement,
   chakra,
   Box,
-  Link,
   Avatar,
   FormControl,
-  FormHelperText,
   InputRightElement,
+  FormLabel,
 } from "@chakra-ui/react";
 import { FaUserAlt, FaLock } from "react-icons/fa";
+import { useForm } from "react-hook-form";
+import axios from "axios";
+import { useStore } from "../store";
+import { AlertBox } from "./Alert";
 
 const CFaUserAlt = chakra(FaUserAlt);
 const CFaLock = chakra(FaLock);
 
+interface ILogin {
+  email: string;
+  password: string;
+}
+
 export const LoginForm = () => {
+  const setAuth = useStore((state) => state.setAuth);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ILogin>();
+
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState({
-    status: false,
-    message: "",
-  });
-  const [loginCredentials, setLoginCredentials] = useState({
-    email: "",
-    password: "",
-  });
 
   const handleShowClick = () => setShowPassword(!showPassword);
+  const [serverError, setServerError] = useState<{
+    title: string;
+    message: string;
+  }>();
 
-  const onSubmit = (e: any) => {
-    e.preventDefault();
+  const onSubmit = async (data: ILogin) => {
+    const authCredential = new FormData();
 
-    if (loginCredentials.email === "" || loginCredentials.password === "") {
-      setError({
-        status: true,
-        message: "Please fill out the required fields.",
-      });
+    authCredential.append("email", data.email);
+    authCredential.append("password", data.password);
+
+    const postData = await axios.post(
+      "http://evaluationproject.atwebpages.com/login.php",
+      authCredential
+    );
+
+    if (postData.data.error === "200") {
+      setAuth(postData.data.user);
       return;
+    } else if (postData.data.error === "400") {
+      setServerError({
+        title: "Error",
+        message: postData.data.message,
+      });
     }
-
-    // API Integration here.
-    console.log(loginCredentials);
-
-    // addUser({
-    //   username: "Fahad",
-    //   email: "faleem396@gmail.com",
-    // });
   };
-
-  useEffect(() => {
-    setError({
-      ...error,
-      status: false,
-    });
-  }, [loginCredentials]);
 
   return (
     <Flex
@@ -78,7 +85,7 @@ export const LoginForm = () => {
         <Avatar bg="teal.500" />
         <Heading color="teal.400">Welcome Admin</Heading>
         <Box minW={{ base: "90%", md: "468px" }}>
-          <form onSubmit={onSubmit}>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <Stack
               spacing={4}
               p="1rem"
@@ -89,6 +96,9 @@ export const LoginForm = () => {
               padding={8}
               borderRadius={5}
             >
+              {serverError?.message && (
+                <AlertBox message={serverError?.message} />
+              )}
               <FormControl>
                 <InputGroup>
                   <InputLeftElement
@@ -98,15 +108,16 @@ export const LoginForm = () => {
                   <Input
                     type="email"
                     placeholder="email address"
-                    value={loginCredentials?.email}
-                    onChange={(e) =>
-                      setLoginCredentials({
-                        ...loginCredentials,
-                        email: e.target.value,
-                      })
-                    }
+                    {...register("email", {
+                      required: "Email is required",
+                    })}
                   />
                 </InputGroup>
+                {errors.email?.type === "required" && (
+                  <FormLabel mt={2} color="Red">
+                    Email is required
+                  </FormLabel>
+                )}
               </FormControl>
               <FormControl>
                 <InputGroup>
@@ -118,13 +129,9 @@ export const LoginForm = () => {
                   <Input
                     type={showPassword ? "text" : "password"}
                     placeholder="Password"
-                    value={loginCredentials?.password}
-                    onChange={(e) =>
-                      setLoginCredentials({
-                        ...loginCredentials,
-                        password: e.target.value,
-                      })
-                    }
+                    {...register("password", {
+                      required: "Password is required",
+                    })}
                   />
                   <InputRightElement width="4.5rem">
                     <Button h="1.75rem" size="sm" onClick={handleShowClick}>
@@ -132,6 +139,11 @@ export const LoginForm = () => {
                     </Button>
                   </InputRightElement>
                 </InputGroup>
+                {errors.password?.type === "required" && (
+                  <FormLabel mt={2} color="Red">
+                    Password is required
+                  </FormLabel>
+                )}
               </FormControl>
               <Button
                 borderRadius={5}
